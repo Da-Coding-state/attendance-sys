@@ -102,6 +102,7 @@ export default function Login() {
                      onChange={(e) => setEmail(e.target.value)}
                      className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-400"
                      placeholder="បញ្ចូលអុីមែល..."
+                     autoComplete="username"
                      required
                   />
                </div>
@@ -113,6 +114,7 @@ export default function Login() {
                      onChange={(e) => setPassword(e.target.value)}
                      className="w-full px-4 py-3 rounded-xl border border-slate-300 bg-slate-50 focus:bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all placeholder:text-slate-400"
                      placeholder="បញ្ចូលពាក្យសម្ងាត់..."
+                     autoComplete="current-password"
                      required
                   />
                </div>

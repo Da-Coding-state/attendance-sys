@@ -1,15 +1,20 @@
 import toast from 'react-hot-toast';
 
-const SCRIPT_URL = import.meta.env.VITE_API_URL;
-const SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY;
+const SCRIPT_URL = import.meta.env.VITE_API_URL || '';
+const SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY || '';
 
 /**
  * Helper សម្រាប់ទាញយកទិន្នន័យ (GET requests)
  */
 async function fetchGet(params: Record<string, string>) {
+  if (!SCRIPT_URL) {
+    toast.error('VITE_API_URL មិនទាន់ត្រូវបានកំណត់ក្នុង .env ទេ!');
+    throw new Error('Missing VITE_API_URL');
+  }
+
   const url = new URL(SCRIPT_URL);
   // បន្ថែម Secret Key ទៅកាន់ Query Parameter
-  url.searchParams.append('secret_key', SECRET_KEY || '');
+  url.searchParams.append('secret_key', SECRET_KEY);
   Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
   
   try {
@@ -35,9 +40,14 @@ async function fetchGet(params: Record<string, string>) {
  * Cution: ប្រើប្រាស់ text/plain ដើម្បីកុំឲ្យជាប់បញ្ហា CORS ជាមួយនឹង Apps Script
  */
 async function fetchPost(payload: any) {
+  if (!SCRIPT_URL) {
+    toast.error('VITE_API_URL មិនទាន់ត្រូវបានកំណត់ក្នុង .env ទេ!');
+    throw new Error('Missing VITE_API_URL');
+  }
+
   const url = new URL(SCRIPT_URL);
   // បន្ថែម Secret Key ទៅកាន់ Query Parameter ទោះបីជា POST ក៏ដោយ (Apps Script doPost អាចអានបាន)
-  url.searchParams.append('secret_key', SECRET_KEY || '');
+  url.searchParams.append('secret_key', SECRET_KEY);
 
   try {
     const response = await fetch(url.toString(), {
