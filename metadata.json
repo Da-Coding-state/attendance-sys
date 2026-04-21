@@ -1,0 +1,6 @@
+{
+  "name": "Student Attendance Backend API Generator",
+  "description": "Generates Google Apps Script (Code.gs) for a Student Attendance Management Web App backend.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
