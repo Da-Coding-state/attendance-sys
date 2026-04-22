@@ -4,102 +4,74 @@ const SCRIPT_URL = import.meta.env.VITE_API_URL || '';
 const SECRET_KEY = import.meta.env.VITE_API_SECRET_KEY || '';
 
 /**
- * Helper សម្រាប់ទាញយកទិន្នន័យ (GET requests)
+ * Universal Helper សម្រាប់បញ្ជូន/ទាញទិន្នន័យ (POST requests only សម្រាប់រាល់សកម្មភាព)
  */
-async function fetchGet(params: Record<string, string>) {
+async function fetchSecure(payload: any) {
   if (!SCRIPT_URL) {
     toast.error('VITE_API_URL មិនទាន់ត្រូវបានកំណត់ក្នុង .env ទេ!');
     throw new Error('Missing VITE_API_URL');
   }
 
-  const url = new URL(SCRIPT_URL);
-  // បន្ថែម Secret Key ទៅកាន់ Query Parameter
-  url.searchParams.append('secret_key', SECRET_KEY);
-  Object.keys(params).forEach(key => url.searchParams.append(key, params[key]));
-  
-  try {
-    const response = await fetch(url.toString());
-    
-    if (response.status === 403) {
-      toast.error('Forbidden: Secret Key មិនត្រឹមត្រូវ! (403)');
-      throw new Error('403 Forbidden');
-    }
-    
-    if (!response.ok) throw new Error('API Request Failed');
-    return response.json();
-  } catch (error: any) {
-    if (error.message !== '403 Forbidden') {
-      console.error('Fetch GET Error:', error);
-    }
-    throw error;
-  }
-}
-
-/**
- * Helper សម្រាប់បញ្ជូនទិន្នន័យ (POST requests)
- * Cution: ប្រើប្រាស់ text/plain ដើម្បីកុំឲ្យជាប់បញ្ហា CORS ជាមួយនឹង Apps Script
- */
-async function fetchPost(payload: any) {
-  if (!SCRIPT_URL) {
-    toast.error('VITE_API_URL មិនទាន់ត្រូវបានកំណត់ក្នុង .env ទេ!');
-    throw new Error('Missing VITE_API_URL');
-  }
-
-  const url = new URL(SCRIPT_URL);
-  // បន្ថែម Secret Key ទៅកាន់ Query Parameter ទោះបីជា POST ក៏ដោយ (Apps Script doPost អាចអានបាន)
-  url.searchParams.append('secret_key', SECRET_KEY);
+  // យើងលែងបញ្ចូល Secret Key តាម URL ទៀតហើយ (ដើម្បីសុវត្ថិភាព)
+  // តែយើងរុញវាចូលទៅក្នុង Body នៃ Payload វិញ។
+  const securePayload = {
+    ...payload,
+    secret_key: SECRET_KEY
+  };
 
   try {
-    const response = await fetch(url.toString(), {
+    const response = await fetch(SCRIPT_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'text/plain;charset=utf-8',
+        'Content-Type': 'application/json',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(securePayload),
     });
     
-    if (response.status === 403) {
-      toast.error('Forbidden: Secret Key មិនត្រឹមត្រូវ! (403)');
+    if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+    
+    const data = await response.json();
+
+    // បើប្រព័ន្ធត្រឡប់មកវិញថា Forbidden តាមរយៈ JSON Body
+    if (data.error && data.error.includes('Forbidden')) {
+      toast.error(data.error);
       throw new Error('403 Forbidden');
     }
-    
-    if (!response.ok) throw new Error('API Request Failed');
-    return response.json();
+
+    return data;
   } catch (error: any) {
-    if (error.message !== '403 Forbidden') {
-      console.error('Fetch POST Error:', error);
-    }
+    // លុបការប្រើប្រាស់ console.error ដើម្បីសុវត្ថិភាព តម្រូវតាមការស្នើសុំ
     throw error;
   }
 }
 
 export const api = {
   loginUser: async (email: string, password: string) => {
-    return fetchPost({ action: 'login', email, password });
+    return fetchSecure({ action: 'login', email, password });
   },
   
   fetchTeacherClasses: async (email: string) => {
-    return fetchGet({ action: 'get_classes', email });
+    return fetchSecure({ action: 'get_classes', email });
   },
   
   fetchStudents: async (className: string) => {
-    return fetchGet({ action: 'get_students', className });
+    return fetchSecure({ action: 'get_students', className });
   },
   
   addStudent: async (className: string, studentData: { lastNameFirstName: string; fullName: string; gender: string; major: string; }) => {
-    return fetchPost({ action: 'add_student', className, studentData });
+    return fetchSecure({ action: 'add_student', className, studentData });
   },
   
   submitBatchAttendance: async (className: string, sessionHeader: string, attendanceData: Array<{studentId: string | number, status: string}>) => {
-    return fetchPost({ action: 'batch_attendance', className, sessionHeader, attendanceData });
+    return fetchSecure({ action: 'batch_attendance', className, sessionHeader, attendanceData });
   },
 
   // ---- Admin Endpoints ----
   adminGetTeachers: async () => {
-    return fetchGet({ action: 'admin_get_teachers' });
+    return fetchSecure({ action: 'admin_get_teachers' });
   },
 
   adminUpdateTeacherAccount: async (name: string, email: string, pass: string) => {
-    return fetchPost({ action: 'admin_update_teacher', name, email, pass });
+    return fetchSecure({ action: 'admin_update_teacher', name, email, pass });
   }
 };
