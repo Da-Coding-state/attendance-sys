@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../services/api';
 import { LogIn, Loader2, BookOpen, Eye, EyeOff } from 'lucide-react';
+import ReCAPTCHA from 'react-google-recaptcha';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -12,8 +13,12 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Use Google's test key if env variable is missing, but advise user to update
+  const recaptchaSiteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY || '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI';
 
   // Auto redirect if already logged in
   useEffect(() => {
@@ -24,26 +29,14 @@ export default function Login() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!captchaToken) {
+      setError('សូម Tick លើប្រអប់ CAPTCHA ដើម្បីបញ្ជាក់ថាអ្នកមិនមែនជាមនុស្សយន្ត!');
+      toast.error('សូម Tick លើប្រអប់ CAPTCHA!');
+      return;
+    }
+    
     setError('');
     setIsSubmitting(true);
-    
-    // --- BYPASS LOGIN (MOCK DATA) សម្រាប់ជំនួយការតេស្ត ---
-    if (email === 'admin@system.com' && password === 'admin123') {
-       login({ id: 'Mock-Admin', name: 'Super Admin', email: 'admin@system.com', role: 'Admin' });
-       toast.success('ចូលប្រព័ន្ធបានជោគជ័យ (Admin Target)');
-       navigate('/admin', { replace: true });
-       setIsSubmitting(false);
-       return;
-    }
-    
-    if (email === 'teacher@system.com' && password === 'teacher123') {
-       login({ id: 'Mock-Teacher', name: 'លោកគ្រូ តេស្ត', email: 'teacher@system.com', role: 'Teacher' });
-       toast.success('ចូលប្រព័ន្ធបានជោគជ័យ (Teacher Target)');
-       navigate('/teacher', { replace: true });
-       setIsSubmitting(false);
-       return;
-    }
-    // ----------------------------------------------------
 
     try {
        const res = await api.loginUser(email, password);
@@ -130,9 +123,17 @@ export default function Login() {
                </div>
             </div>
 
+            <div className="flex justify-center my-4 overflow-hidden rounded-lg">
+               <ReCAPTCHA
+                  sitekey={recaptchaSiteKey}
+                  onChange={(token) => setCaptchaToken(token)}
+                  onExpired={() => setCaptchaToken(null)}
+               />
+            </div>
+
             <button 
                type="submit" 
-               disabled={isSubmitting || !email || !password}
+               disabled={isSubmitting || !email || !password || !captchaToken}
                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-md"
             >
                {isSubmitting ? (
