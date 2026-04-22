@@ -23,7 +23,8 @@ export default function TeacherDashboard() {
         const res = await api.fetchTeacherClasses(user.email);
         
         if (res.success) {
-          setClasses(res.classes || []);
+          // Google Apps script returns the array in res.data, not res.classes
+          setClasses(res.data || []);
         } else {
           const errMsg = res.error || 'មិនអាចទាញយកទិន្នន័យថ្នាក់រៀនបានទេ';
           setError(errMsg);
